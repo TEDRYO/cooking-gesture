@@ -405,7 +405,7 @@ function detect() {
   requestAnimationFrame(detect);
 }
 // ===== Raspberry Pi 5との通信(WebSocket) =====
-const socket = new WebSocket("ws://172.29.116.54:8765");
+const socket = new WebSocket("wss://172.29.116.54:8765");
 
 socket.onopen = () => {
   console.log("Pi5と接続しました");
