@@ -404,7 +404,23 @@ function detect() {
   status.className = handSeen ? "on" : "";
   requestAnimationFrame(detect);
 }
+// ===== Raspberry Pi 5との通信(WebSocket) =====
+const socket = new WebSocket("ws://172.29.116.54:8765");
 
+socket.onopen = () => {
+  console.log("Pi5と接続しました");
+};
+
+socket.onmessage = (event) => {
+  if (event.data === "next") {
+    goTo(current + 1);
+    showSignal("次へ ▼");
+  }
+};
+
+socket.onerror = (error) => {
+  console.log("WebSocket接続エラー:", error);
+};
 goTo(0);
 detect();
 </script>
