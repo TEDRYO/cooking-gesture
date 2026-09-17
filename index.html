@@ -151,7 +151,7 @@ function goTo(index) {
   progress.style.width = ((current) / (steps.length - 1) * 100) + "%";
 }
 
-const socket = new WebSocket("wss://172.29.116.54:8765");
+const socket = new WebSocket("ws://172.29.116.54:8765");
 
 socket.onopen = () => {
   status.textContent = "Pi5と接続しました";
