@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cooking Assistant - ロールキャベツ</title>
+<title>Cooking Assistant - ロールキャベツ(通信テスト版)</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -81,137 +81,35 @@ body {
   opacity: 0; transition: opacity 0.2s; z-index: 200;
   text-shadow: 0 0 30px #00e5ff;
 }
-#camera {
-  position: fixed; bottom: 20px; right: 20px;
-  width: 150px; height: 112px; border-radius: 12px;
-  border: 1px solid rgba(0,229,255,0.4); z-index: 100;
-  box-shadow: 0 0 20px rgba(0,229,255,0.2);
-  object-fit: cover;
-}
-#hint {
-  position: fixed; bottom: 140px; right: 20px; z-index: 100;
-  font-size: 11px; color: #7a8ba3; text-align: right; line-height: 1.5;
-}
-.timer-hint {
-  margin-top: 16px; padding: 10px 16px; font-size: 14px; font-weight: 600;
-  color: #00e5ff; background: rgba(0,229,255,0.08);
-  border: 1px dashed rgba(0,229,255,0.5); border-radius: 10px;
-}
-#timer-display {
-  position: fixed; top: 50%; right: 20px;
-  transform: translateY(-50%);
-  display: flex; flex-direction: column; align-items: center;
-  padding: 20px 36px; border-radius: 18px;
-  background: rgba(6,12,24,0.9); border: 2px solid rgba(0,229,255,0.5);
-  box-shadow: 0 0 35px rgba(0,229,255,0.4);
-  z-index: 150; opacity: 0; pointer-events: none;
-  transition: opacity 0.3s;
-}
-#timer-display.show { opacity: 1; }
-#timer-label {
-  font-size: 11px; letter-spacing: 2px; color: #7a8ba3; margin-bottom: 2px;
-}
-#timer-time {
-  font-size: 40px; font-weight: 800; color: #00e5ff;
-  text-shadow: 0 0 20px #00e5ff; line-height: 1;
-}
-#timer-display.finished #timer-time { color: #ff6b6b; text-shadow: 0 0 20px #ff6b6b; }
-#timer-display.finished { border-color: #ff6b6b; }
 </style>
 </head>
 <body>
 
 <div id="header">
   <div id="title">COOKING <span>ASSISTANT</span></div>
-  <div id="subtitle">ロールキャベツ ／ 工程追従モード</div>
+  <div id="subtitle">ロールキャベツ ／ 工程追従モード(通信テスト)</div>
   <div id="progress-track"><div id="progress-fill"></div></div>
 </div>
 
 <div id="steps"></div>
-
 <div id="signal"></div>
-<div id="status">準備中...</div>
-<div id="hint">指を上に向ける → 次へ<br>指を下に向ける → 戻る</div>
-<video id="camera" autoplay playsinline></video>
+<div id="status">Pi5への接続待ち...</div>
 
-<script type="module">
-import { HandLandmarker, FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
-
-// ===== タイマー機能 =====
-const display = document.createElement("div");
-display.id = "timer-display";
-display.innerHTML = `<span id="timer-label">TIMER</span><span id="timer-time">--:--</span>`;
-document.body.appendChild(display);
-const timeEl = () => document.getElementById("timer-time");
-let intervalId = null;
-
-function formatTime(sec) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-function startTimer(totalSeconds) {
-  if (intervalId) clearInterval(intervalId);
-  let remaining = totalSeconds;
-  display.classList.add("show");
-  display.classList.remove("finished");
-  timeEl().textContent = formatTime(remaining);
-  intervalId = setInterval(() => {
-    remaining--;
-    if (remaining <= 0) {
-      clearInterval(intervalId);
-      intervalId = null;
-      timeEl().textContent = "完了!";
-      display.classList.add("finished");
-      beep();
-      setTimeout(() => display.classList.remove("show"), 6000);
-    } else {
-      timeEl().textContent = formatTime(remaining);
-    }
-  }, 1000);
-}
-
-function isTimerRunning() { return intervalId !== null; }
-
-function stopTimer() {
-  if (intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
-    display.classList.remove("show");
-    display.classList.remove("finished");
-  }
-}
-
-function beep() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    gain.gain.value = 0.2;
-    osc.start();
-    setTimeout(() => { osc.stop(); ctx.close(); }, 600);
-  } catch (e) { /* 音が出せない環境でも無視 */ }
-}
-
-// ===== レシピ(ロールキャベツ) =====
+<script>
 const recipe = [
-  { title: "キャベツを下ゆでする", time: "約8分", tag: "下ごしらえ", seconds: 180,
+  { title: "キャベツを下ゆでする", time: "約8分", tag: "下ごしらえ",
     desc: "キャベツの葉を6枚はがし、熱湯でしんなりするまで2〜3分ゆでる。ざるに上げて冷ます。",
     tip: "芯の厚い部分は包丁でそぎ落とすと巻きやすい。" },
-  { title: "肉だねを作る", time: "約5分", tag: "下ごしらえ", seconds: 0,
+  { title: "肉だねを作る", time: "約5分", tag: "下ごしらえ",
     desc: "合いびき肉300g、みじん切り玉ねぎ1/2個、卵1個、パン粉大さじ3、塩こしょうを粘りが出るまで混ぜる。",
     tip: "玉ねぎは炒めずそのままでOK。冷たいまま混ぜると肉が締まる。" },
-  { title: "肉だねを巻く", time: "約10分", tag: "成形", seconds: 0,
+  { title: "肉だねを巻く", time: "約10分", tag: "成形",
     desc: "キャベツの葉に肉だねを6等分でのせ、手前から巻き、両端を折り込む。巻き終わりを楊枝でとめる。",
     tip: "きつめに巻くと煮崩れしにくい。" },
-  { title: "鍋に並べて煮込む", time: "約25分", tag: "加熱", seconds: 1500,
+  { title: "鍋に並べて煮込む", time: "約25分", tag: "加熱",
     desc: "巻き終わりを下にして鍋に並べ、コンソメ・水400ml・ローリエを加え、落し蓋をして弱火で25分煮込む。",
     tip: "すき間なく並べると転がらず形が保てる。" },
-  { title: "味を調えて仕上げる", time: "約5分", tag: "仕上げ", seconds: 0,
+  { title: "味を調えて仕上げる", time: "約5分", tag: "仕上げ",
     desc: "塩こしょうで味を調え、火を止める。器に盛り、煮汁をかけてお好みでパセリを散らす。",
     tip: "一度冷ますと味がしみて翌日はさらに美味しい。" }
 ];
@@ -227,26 +125,15 @@ recipe.forEach((r, i) => {
       <h2>${r.title}</h2>
       <div class="desc">${r.desc}</div>
       <div class="tip">💡 ${r.tip}</div>
-      ${r.seconds > 0 ? `<div class="timer-hint">✋ 手をパーにするとタイマー開始（${Math.round(r.seconds/60)}分）</div>` : ""}
     </div>`;
   stepsEl.appendChild(div);
 });
 const steps = document.querySelectorAll(".step");
 
-const video = document.getElementById("camera");
 const status = document.getElementById("status");
 const signal = document.getElementById("signal");
 const progress = document.getElementById("progress-fill");
-
 let current = 0;
-let lastAction = 0;
-let heldDir = null;
-let heldStart = 0;
-const HOLD_TIME = 400;
-let isLooking = false;
-let palmStart = 0;
-let fistStart = 0;
-const PALM_HOLD = 600;
 
 function showSignal(text) {
   signal.textContent = text;
@@ -264,151 +151,11 @@ function goTo(index) {
   progress.style.width = ((current) / (steps.length - 1) * 100) + "%";
 }
 
-function isPalm(h) {
-  const index  = h[8].y  < h[6].y;
-  const middle = h[12].y < h[10].y;
-  const ring   = h[16].y < h[14].y;
-  const pinky  = h[20].y < h[18].y;
-  return index && middle && ring && pinky;
-}
-
-function isFist(h) {
-  const index  = h[8].y  > h[6].y;
-  const middle = h[12].y > h[10].y;
-  const ring   = h[16].y > h[14].y;
-  const pinky  = h[20].y > h[18].y;
-  return index && middle && ring && pinky;
-}
-
-const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm");
-const handLandmarker = await HandLandmarker.createFromOptions(vision, {
-  baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task" },
-  numHands: 1,
-  runningMode: "VIDEO"
-});
-
-const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-video.srcObject = stream;
-await video.play();
-
-const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-  baseOptions: {
-    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
-  },
-  outputFaceBlendshapes: false,
-  runningMode: "VIDEO",
-  numFaces: 1
-});
-
-function checkLooking() {
-  const result = faceLandmarker.detectForVideo(video, performance.now());
-  if (result.faceLandmarks && result.faceLandmarks.length > 0) {
-    const lm = result.faceLandmarks[0];
-    const irisL = lm[468];
-    const eyeInnerL = lm[133];
-    const eyeOuterL = lm[33];
-    const eyeTopL = lm[159];
-    const eyeBottomL = lm[145];
-    const eyeWidthL = Math.abs(eyeOuterL.x - eyeInnerL.x);
-    const eyeHeightL = Math.abs(eyeBottomL.y - eyeTopL.y);
-    const centerXL = (eyeOuterL.x + eyeInnerL.x) / 2;
-    const centerYL = (eyeTopL.y + eyeBottomL.y) / 2;
-    const offsetXL = Math.abs(irisL.x - centerXL) / eyeWidthL;
-    const offsetYL = Math.abs(irisL.y - centerYL) / eyeHeightL;
-
-    const irisR = lm[473];
-    const eyeInnerR = lm[362];
-    const eyeOuterR = lm[263];
-    const eyeTopR = lm[386];
-    const eyeBottomR = lm[374];
-    const eyeWidthR = Math.abs(eyeOuterR.x - eyeInnerR.x);
-    const eyeHeightR = Math.abs(eyeBottomR.y - eyeTopR.y);
-    const centerXR = (eyeOuterR.x + eyeInnerR.x) / 2;
-    const centerYR = (eyeTopR.y + eyeBottomR.y) / 2;
-    const offsetXR = Math.abs(irisR.x - centerXR) / eyeWidthR;
-    const offsetYR = Math.abs(irisR.y - centerYR) / eyeHeightR;
-
-    const noseTip = lm[1];
-    const faceLeft = lm[234];
-    const faceRight = lm[454];
-    const faceWidth = Math.abs(faceRight.x - faceLeft.x);
-    const faceCenterX = (faceLeft.x + faceRight.x) / 2;
-    const faceOffset = Math.abs(noseTip.x - faceCenterX) / faceWidth;
-
-    const eyesOk = (offsetXL < 0.22 && offsetYL < 0.35 && offsetXR < 0.22 && offsetYR < 0.35);
-    const faceOk = faceOffset < 0.08;
-    isLooking = eyesOk && faceOk;
-  } else {
-    isLooking = false;
-  }
-}
-
-function detect() {
-  const results = handLandmarker.detectForVideo(video, performance.now());
-  checkLooking();
-  const now = performance.now();
-  let dir = null;
-  let palm = false;
-  let fist = false;
-  let handSeen = false;
-
-  if (results.landmarks && results.landmarks.length > 0) {
-    handSeen = true;
-    const h = results.landmarks[0];
-    palm = isPalm(h);
-    fist = isFist(h);
-    if (!palm && !fist) {
-      const dy = h[8].y - h[5].y;
-      const dx = h[8].x - h[5].x;
-      const vertical = Math.abs(dy) > Math.abs(dx);
-      if (vertical && dy < -0.15) dir = "up";
-      else if (vertical && dy > 0.15) dir = "down";
-    }
-  }
-
-  if (palm) {
-    if (palmStart === 0) palmStart = now;
-    if (isLooking && now - palmStart > PALM_HOLD && recipe[current].seconds > 0 && !isTimerRunning()) {
-      startTimer(recipe[current].seconds);
-      showSignal("⏲ START");
-      palmStart = 0;
-    }
-  } else {
-    palmStart = 0;
-  }
-
-  if (fist) {
-    if (fistStart === 0) fistStart = now;
-    if (isLooking && now - fistStart > PALM_HOLD && isTimerRunning()) {
-      stopTimer();
-      showSignal("⏹ STOP");
-      fistStart = 0;
-    }
-  } else {
-    fistStart = 0;
-  }
-
-  if (dir && dir === heldDir) {
-    if (isLooking && now - heldStart > HOLD_TIME && now - lastAction > 1000) {
-      if (dir === "up") { goTo(current + 1); showSignal("次へ ▼"); }
-      else { goTo(current - 1); showSignal("戻る ▲"); }
-      lastAction = now;
-      heldDir = null;
-    }
-  } else {
-    heldDir = dir;
-    heldStart = now;
-  }
-
-  status.textContent = handSeen ? `認識中 ／ 工程 ${current+1} / ${steps.length}` : `手をかざしてください`;
-  status.className = handSeen ? "on" : "";
-  requestAnimationFrame(detect);
-}
-// ===== Raspberry Pi 5との通信(WebSocket) =====
-const socket = new WebSocket("wss://172.29.116.54:8765");
+const socket = new WebSocket("ws://172.29.116.54:8765");
 
 socket.onopen = () => {
-  console.log("Pi5と接続しました");
+  status.textContent = "Pi5と接続しました";
+  status.className = "on";
 };
 
 socket.onmessage = (event) => {
@@ -419,10 +166,16 @@ socket.onmessage = (event) => {
 };
 
 socket.onerror = (error) => {
+  status.textContent = "接続エラー(Console参照)";
   console.log("WebSocket接続エラー:", error);
 };
+
+socket.onclose = () => {
+  status.textContent = "接続が切れました";
+  status.className = "";
+};
+
 goTo(0);
-detect();
 </script>
 
 </body>
